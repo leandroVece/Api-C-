@@ -7,6 +7,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//builder.Services.AddScoped<IHelloService, HelloService>();
+builder.Services.AddScoped<IHelloService>(p => new HelloService());
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

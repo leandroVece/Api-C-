@@ -188,3 +188,72 @@ Pero este no es el unico problema. si agregruemos "?time" en cualquier de nuestr
 
 Esto es devido a que nunca especificamos las condiciones para cuando se debe mostrar y cuando no.
 
+## Inyeciones de dependencia
+
+Este es un comcepto altamente utilizado en los lenguaje que utilizan el POO. Basicamente lo que nos permite es usar varios tipos de atrapciones (interfaces) y configurar nuestras dependencias utilizando nuestro inyector.
+
+De esta manera no tenemos que intanciar un nuevo objeto si no, que dejariamos que el inyector se encargara de pasarnos nuestra dependencia cada vez que la necesitemos.
+
+Vamos a crear una dependencia muy sensilla. Para ello creemos una carpeta nueva llamada service para guardar nuestro archivo. dentro crearemos una nueva clase llamada HelloService.cs y agregaremos el siguiente codigo.
+
+    public class HelloService : IHelloService
+    {
+        public string GetHelloWorld()
+        {
+            return "Hello World!";
+        }
+    }
+
+    public interface IHelloService
+    {
+        string GetHelloWorld();
+    }
+
+Depues vamos a nuestro archivo program.cs y inyectaremos nuestra dependencia. Hay 3 tipos de formas muy conocidas.
+
+- AddScoped: crea una instancia por cada request del cliente
+- AddTransient: crea una instancia por cada controlador
+- AddSingelton: crea una sola instancia para todo lo que dure la ejecución de la API.
+
+Para nuestro proyecto usaremos AddScoped. agregurmos esta linea de codigo antes de var app = builder.Build();
+
+    builder.Services.AddScoped<IHelloService , HelloService>();
+
+
+Luego creemos un nuevo controlador llamado HelloControler y copiemos el siguiente codigo.
+
+    using Microsoft.AspNetCore.Mvc;
+
+    namespace API.Controllers;
+
+    [ApiController]
+    [Route("[controller]")]
+    public class HelloController : ControllerBase
+    {
+        IHelloService helloWorldService;
+
+        public HelloController(IHelloService helloWorld)
+        {
+            helloWorldService = helloWorld;
+        }
+
+        public IActionResult Get()
+        {
+            return Ok(helloWorldService.GetHelloWorld());
+        }
+
+    }
+
+Con todo listo podemos ir a Postman y pegar la URL https://localhost:7261/Hello y listo vemos nuestro hello word. Este mensaje viene desde nuestra inyeccion.
+
+¿Se puede inyectar una dependencia desde una clase? la respues es "Si" para casos muy especificos que no necesiten conectarse a una base de datos o servicios se pueden hacer este tipo de practica.
+
+Lo unico que tenemos que hacer es en ves de copiar la inyeccion como esta arriba, copiamos el siguiente codigo
+
+    builder.Services.AddScoped(p=> new HelloService());
+
+Pero esto nos daria un error y eso es debido que nuestro proyecto esta esperando una dependencia IHelloService. Pero como nosotros cambiamos (las debentajas de usar clases que es podemos cambiarlas como queramos) tenemos que cambiar en todos nuestros controladores donde estemos usando esto por nuestra clase.
+
+Para ahorranos el problema vamos a agregar un pequeña instruccion mas.
+
+    builder.Services.AddScoped<IHelloService>(p=> new HelloService());
