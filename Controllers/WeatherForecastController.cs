@@ -30,8 +30,8 @@ public class WeatherForecastController : ControllerBase
     }
 
     [HttpGet(Name = "GetWeatherForecast")]
-    [Route("Get/weatherforecast")]
-    [Route("[action]")]
+    //[Route("Get/weatherforecast")]
+    //[Route("[action]")]
     public IEnumerable<WeatherForecast> NewGet()
     {
         _logger.LogInformation("Soy un log");

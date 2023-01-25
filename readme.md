@@ -297,4 +297,35 @@ Entonces para congigurar otros niveles podemos ir appsetting.json y cambiar su c
 }
 
 y en nuestro controlador cambiamos el nivel del log de information por debug.
-s
+
+## Swagger
+
+Swagger es una documentación online que se genera sobre una API. Por lo tanto, en esta herramienta podemos ver todos los endpoint que hemos desarrollado en nuestra API Swagger. Además, nos demuestra cómo son los elementos o datos que debemos pasar para hacer que funcione y nos permite probarlos directamente en su interfaz.
+
+Esta viene instalada por defecto y se puede corroborar en nuestro archivo program.cs tiene inyectada el siguiente codigo
+    
+    builder.Services.AddSwaggerGen();
+
+Sin embargo, si nosotros corremos nuestro codigo tal y como esta y entramos el endpoind de swagger https://localhost:7261/swagger/index.html tendremos un error.
+
+![](contents/img/swagger.png)
+
+Esto se debe a que swagger utiliza un estandar conocido como OpenAPI y es muy importante que nuestra Api siga este estandar para funcionar.
+
+Si vemos la consola veremos que nuestro error esta en nuestro controlador nuevo
+
+>Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1] An unhandled exception has occurred while executing the request.  
+     Swashbuckle.AspNetCore.SwaggerGen.SwaggerGeneratorException: Ambiguous HTTP method for action - API.Controllers.HelloController.Get (API). Actions require an explicit HttpMethod binding for Swagger/OpenAPI 3.0
+
+Esto nos dice que nuestro controlador no tiene el atributo HTTP correspondiente, por lo que solo tendremos que agregarlo y listo.
+
+    [HttpGet]
+    public IActionResult Get()
+    {
+        return Ok(helloWorldService.GetHelloWorld());
+    }
+
+> Nota: no nos olvidemos que segun el estandar no podemos tener mas de una ruta, por lo que si no comentaste las lineas extras en nuestro metodo NewGet() commentalo para que pueda andar
+
+Desde swagger podremos ejecutar nuestras distintas Endpoint y probar su funcionamiento.
+
