@@ -257,3 +257,44 @@ Pero esto nos daria un error y eso es debido que nuestro proyecto esta esperando
 Para ahorranos el problema vamos a agregar un pequeña instruccion mas.
 
     builder.Services.AddScoped<IHelloService>(p=> new HelloService());
+
+## Logging
+
+Ahora que tenemos estos conocimientos comencemos a hacer un reto de crear un loggin.
+
+Un log ("registro", en español) es un archivo de texto en el que constan cronológicamente los acontecimientos que han ido afectando a un sistema informático (programa, aplicación, servidor, etc.), así como el conjunto de cambios que estos han generado.
+
+Si nosotro vamos a nustro controlador por defecto, encontraremos una linea de codigo vemos que tenemos intanciado un Logger por defecto. Asp.net viene con un logger por defecto ya preconfigurado.
+
+Acceder a el es tan facil como llamarlo e invocarlo.
+
+    public IEnumerable<WeatherForecast> NewGet()
+    {
+        _logger.LogInformation("Soy un log");
+        return listWF;
+    }
+
+En nuestra funcion NweGet invocamos nuestro logger y con el metodo escribimos en consola lo que queremos.
+
+Si nosotros corremos nuestra aplicacion y entramos en la url del metodo get veremos que en nuestra consola se escribi nuestro mensaje. 
+
+![](contents/img/logger.png)
+
+Esto es muy util para poder seguir los cambios de nuestra aplicacion y capturar errores que pueden pasar de manera inesperada. Para mas informacion [aqui](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-6.0)
+
+Normalmente en produccion se usa los niveles 2 y 4 que corresponde a information y Error. Cuando estamos desarrollando se suele usar el debug porque nos permite registrar todos los mensajes y ver que es lo que pasa internamente.
+
+Entonces para congigurar otros niveles podemos ir appsetting.json y cambiar su configuracion. Por lo que si queremos usar uno de nivel superior como debug tendremos que cambiar su configuracion.
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+
+y en nuestro controlador cambiamos el nivel del log de information por debug.
+s
