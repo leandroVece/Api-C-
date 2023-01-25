@@ -128,5 +128,63 @@ El codigo tiene que estar despues de la autorizacion (app.UseAuthorization()) y 
 
 Ahora tal vez vea mejor lo que es un Middlewares, son simplemente intrucciones de codigo que se iran agregando una tras otro durante el ciclo de vida de nuestra aplicacion.
 
-Creemos nuestro propio Middlewares para entender un poco mas el tema. Empecemos con agregar una nueva carpeta para alojar el archivo. 
+Creemos nuestro propio Middlewares para entender un poco mas el tema. Empecemos con agregar una nueva carpeta para alojar el archivo. De nombre le pondremos timeMiddleware.cs y dentro copiaremos el siguiente codigo.
+
+    using Microsoft.AspNetCore.Http;
+    public class timeMiddleware
+    {
+        readonly RequestDelegate next;
+
+        public timeMiddleware(RequestDelegate nextRequest)
+        {
+            next = nextRequest;
+        }
+
+        public async Task Invoke(HttpContext content)
+        {
+
+            await next(content);
+            if (content.Request.Query.Any(p => p.Key == "time"))
+            {
+                await content.Response.WriteAsync(DateTime.Now.ToLongDateString());
+            }
+        }
+    }
+
+    public static class TimeMiddlewareExtension
+    {
+        public static IApplicationBuilder UseTimeMiddleware(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<timeMiddleware>();
+        }
+    }
+
+La logica es simple con RequestDelegate vamos a invocar el Middleware que sigue. En el contructor hacemos el llamado al siguiente Middleware.
+
+Despues creamos un metodo asincrono llamado Invoke que esta en todo los Middlewares y dentro vamos a hacer un analices sobre ese request y ver si dentro existe algun parametro que tenga la palabra "time". Si existe devolvemos la fecha actual.
+
+Por ultimo crearemos una nueva clase que nos va a permitir agregar el Middleware en nuestro archivo Program.cs.
+
+Ahora podemos ir a Postman a ver el resultado ¿como? colocando la direccion de esta manera {localhost}/?time
+
+Ahora para entender la improtancia del orden intercabiemos de lugar unas cosas en nuestro codigo.
+
+    public async Task Invoke(HttpContext content)
+    {
+
+        if (content.Request.Query.Any(p => p.Key == "time"))
+        {
+            await content.Response.WriteAsync(DateTime.Now.ToLongDateString());
+        }
+        await next(content);
+
+    }
+
+Si corremos nuestro codigo con este cambio vemos que ya nos nos devuelve el json
+
+Pero este no es el unico problema. si agregruemos "?time" en cualquier de nuestros endpoin nos devolvera la fecha. veamoslo en Postman
+
+    https://localhost:7261/weatherforecast/?time
+
+Esto es devido a que nunca especificamos las condiciones para cuando se debe mostrar y cuando no.
 
