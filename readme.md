@@ -329,3 +329,297 @@ Esto nos dice que nuestro controlador no tiene el atributo HTTP correspondiente,
 
 Desde swagger podremos ejecutar nuestras distintas Endpoint y probar su funcionamiento.
 
+## Proyecto Real
+
+Con todo lo hablado intentemos crear una aplicacion un poco mas adaptado a las nesecidades actuales. para ellos vamos a usar Entity Framework. Comencemos intalandos las liberias.
+
+    dotnet add package Microsoft.EntityFrameworkCore --version 7.0.2
+    dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 7.0.2
+    dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 7.0.2
+    dotnet add package Microsoft.EntityFrameworkCore.Design --version 7.0.2
+    
+
+>Nota: recordar siempre buscar las versiones mas estables y no las priview.
+
+Como estos son para fines practicos y para no hacer mas largo de lo necesario esta explicacion, voy a usar otro proyecto el cual ya hable [Link](https://github.com/leandroVece/Entity-Framenwork).
+
+De ella saque la carpeta Models que contenia las clases y el context. Como es un trabajo aparte y solo lo arrastramos es buena practica correrlo para ver que tipo de errores tendra.
+
+    dotnet biuld
+
+Esta linea de codigo nos permite correr la aplicacion una vez y ver si tiene errores. Las explicaciones esta a simple vista o en el repositorio.
+Ahora podemos implementar los servicios para nuestras nuevas clases. Yo por cuestiones de comodidad me mantendre en el mismo archivo, pero es una buena practica hacerlo en archivos diferetes.
+
+>Nota: me he dado cuenta de un error de ortografia. En vez de escribir Category escribi Categoty; es algo que los dislexicos tendremos que lidiar. Tambien hice un mal uso de la palabra Task que es una palabra recerbada, no lo voy a modificar demaciado para que quede como ejemplo de lo que no se debe hacer.
+
+
+CategoryServices.cs
+
+    using EF.Models;
+
+    namespace API.Service;
+    public class CategoryService : ICategoryService
+    {
+        TaskContext context;
+
+        public CategoryService(TaskContext dbcontext)
+        {
+            context = dbcontext;
+        }
+
+        public IEnumerable<Category> Get()
+        {
+            return context.Categoties;
+        }
+
+        //Esta es la razon por la que no debemos usar palabras recervadas.
+        public async System.Threading.Tasks.Task Save(Category category)
+        {
+            context.Add(category);
+            await context.SaveChangesAsync();
+        }
+
+        public async System.Threading.Tasks.Task update(Guid id, Category category)
+        {
+            var categoryPresent = context.Categoties.Find(id);
+            if (categoryPresent != null)
+            {
+                categoryPresent.Name = category.Name;
+                categoryPresent.Description = category.Description;
+                categoryPresent.Salubrity = category.Salubrity;
+
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async System.Threading.Tasks.Task Delete(Guid id)
+        {
+            var categoryPresent = context.Categoties.Find(id);
+            if (categoryPresent != null)
+            {
+                context.Remove(categoryPresent);
+                await context.SaveChangesAsync();
+            }
+        }
+
+
+
+    }
+
+    public interface ICategoryService
+    {
+        IEnumerable<Category> Get();
+        System.Threading.Tasks.Task Delete(Guid id);
+        System.Threading.Tasks.Task update(Guid id, Category category);
+        System.Threading.Tasks.Task Save(Category category);
+
+    }
+
+
+TaskServices.cs
+
+    using EF.Models;
+
+    namespace API.Service;
+    public class TaskService : ITaskService
+    {
+        TaskContext context;
+
+        public TaskService(TaskContext dbcontext)
+        {
+            context = dbcontext;
+        }
+
+        public IEnumerable<EF.Models.Task> Get()
+        {
+            return context.Tasks;
+        }
+
+        //Esta es la razon por la que no debemos usar palabras recervadas.
+        public async System.Threading.Tasks.Task Save(EF.Models.Task Task)
+        {
+            context.Add(Task);
+            await context.SaveChangesAsync();
+        }
+
+        public async System.Threading.Tasks.Task update(Guid id, EF.Models.Task Task)
+        {
+            var TaskPresent = context.Tasks.Find(id);
+            if (TaskPresent != null)
+            {
+                TaskPresent.Title = Task.Title;
+                TaskPresent.Description = Task.Description;
+                TaskPresent.Date = Task.Date;
+                TaskPresent.PriorityTask = Task.PriorityTask;
+
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async System.Threading.Tasks.Task Delete(Guid id)
+        {
+            var TaskPresent = context.Categoties.Find(id);
+            if (TaskPresent != null)
+            {
+                context.Remove(TaskPresent);
+                await context.SaveChangesAsync();
+            }
+        }
+
+    }
+
+    public interface ITaskService
+    {
+        IEnumerable<EF.Models.Task> Get();
+        System.Threading.Tasks.Task Delete(Guid id);
+        System.Threading.Tasks.Task update(Guid id, EF.Models.Task Task);
+        System.Threading.Tasks.Task Save(EF.Models.Task Task);
+
+    }
+
+Ahora podemos hacer la inyeccion de dependencia en la case program.cs
+
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<ITaskService, TaskService>();
+
+Solo nos faltaria crear nuestros controladores; comencemos con el controlador de categoria.
+
+using API.Service;
+using EF.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Controllers;
+
+[Route("api/[controller]")]
+public class CategoryController : ControllerBase
+{
+    private readonly ICategoryService _categoryService;
+
+    public CategoryController(ICategoryService categoryService)
+    {
+        _categoryService = categoryService;
+    }
+
+
+    [HttpGet]
+    public IActionResult Get()
+    {
+        return Ok(_categoryService.Get());
+    }
+    [HttpPost]
+    public IActionResult Post([FromBody] Category category)
+    {
+        _categoryService.Save(category);
+        return Ok();
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult Put(Guid id, [FromBody] Category category)
+    {
+        _categoryService.update(id, category);
+        return Ok();
+    }
+    [HttpDelete("{id}")]
+    public IActionResult Delete(Guid id)
+    {
+        _categoryService.Delete(id);
+        return Ok();
+    }
+
+}
+
+Como habran podido notar, no tenemos logica en los metodos de nuestro controlador, esto es por que la logica se encuentra en nuestras dependencias y aqui solo hacemos el mimimo necesario para obtenerlas. Veamos el otro controlador
+
+
+    using API.Service;
+    using EF.Models;
+    using Microsoft.AspNetCore.Mvc;
+
+    namespace API.Controllers;
+
+    [Route("api/[controller]")]
+    public class TaskController : ControllerBase
+    {
+        private readonly ITaskService _taskService;
+
+        public TaskController(ITaskService TaskService)
+        {
+            _taskService = TaskService;
+        }
+
+
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok(_taskService.Get());
+        }
+        [HttpPost]
+        public IActionResult Post([FromBody] EF.Models.Task Task)
+        {
+            _taskService.Save(Task);
+            return Ok();
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult Put(Guid id, [FromBody] EF.Models.Task Task)
+        {
+            _taskService.update(id, Task);
+            return Ok();
+        }
+        [HttpDelete("{id}")]
+        public IActionResult Delete(Guid id)
+        {
+            _taskService.Delete(id);
+            return Ok();
+        }
+
+    }
+
+Con todo terminado ahora podemos conectarla a la base de datos. Primero volvamos a nuestro archivo Program y agreguemos una linea de codigo mas.
+
+    builder.Services.AddSqlServer<TaskContext>(builder.Configuration.GetConnectionString("SQLServer"));
+
+Esta linea la reconoceras si viste anterior trabajo cuando hablamos de Entity Framework tambien hay que agregrar en el archivo appsettings.json
+
+    "ConnectionStrings": {
+        "SQLServer": "data source=DESKTOP-R16IMC7;Initial Catalog=TaskDB;Trusted_Connection=True; TrustServerCertificate=True;"
+    }
+
+Y podemos ir a Postman y podemos comprobar si funciona con el siguiente link https://localhost:7261/api/category. Ahora en el caso de que no tengas creada la base de datos lo unico que tendrias que hacer es Crearla. Como la configuracion ya esta echa lo unico que tendriamos qeu hacer es llamar al metodo entonces vamos a usar el controllador de Hello y en el vamos a hacer la logica para crearlo.
+
+    using EF.Models;
+    using Microsoft.AspNetCore.Mvc;
+
+    namespace API.Controllers;
+
+    [ApiController]
+    [Route("[controller]")]
+    public class HelloController : ControllerBase
+    {
+        IHelloService helloWorldService;
+        TaskContext dbcontext;
+
+        public HelloController(IHelloService helloWorld, TaskContext db)
+        {
+            helloWorldService = helloWorld;
+            dbcontext = db;
+        }
+
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok(helloWorldService.GetHelloWorld());
+        }
+
+        [HttpGet]
+        [Route("createdb")]
+        public IActionResult CreateDatabase()
+        {
+            dbcontext.Database.EnsureCreated();
+
+            return Ok();
+        }
+
+    }
+
+Ahora vamos al Endpoin https://localhost:7261/Hello/createdb y deberia crear la base de datos. volvemos a postman y hacemos las pruebas.
