@@ -484,15 +484,15 @@ Ahora podemos hacer la inyeccion de dependencia en la case program.cs
 
 Solo nos faltaria crear nuestros controladores; comencemos con el controlador de categoria.
 
-using API.Service;
-using EF.Models;
-using Microsoft.AspNetCore.Mvc;
+    using API.Service;
+    using EF.Models;
+    using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+    namespace API.Controllers;
 
-[Route("api/[controller]")]
-public class CategoryController : ControllerBase
-{
+    [Route("api/[controller]")]
+    public class CategoryController : ControllerBase
+    {
     private readonly ICategoryService _categoryService;
 
     public CategoryController(ICategoryService categoryService)
